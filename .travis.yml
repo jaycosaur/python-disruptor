@@ -5,4 +5,4 @@ python:
 install:
     - pip3 install -r requirements.txt
     - pip3 install -r test-requirements.txt
-script: ./scripts/run-lint.sh && ./scripts/run-test.sh
+script: ./scripts/lint.sh && ./scripts/test.sh
