@@ -1,14 +1,14 @@
 
 import threading
 import multiprocessing as mp
+import uuid
 
 from disruptor.factory import EventFactory
 from disruptor.sequence import Sequence
 from disruptor.subscriber import Subscriber
 
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Any
 from typing_extensions import Protocol
-import uuid
 
 class DisruptorClosed(Exception):
     pass
@@ -27,18 +27,6 @@ class SequenceNotFound(Exception):
 class Empty(Exception):
     pass
 
-"""
-Tree of handlers
-Once Top handler 'finishes' sequence, notification sent to children etc etc.
-Top handler cannot overwrite lowest leaf node in tree at any point in time!
-
-When trying to access a sequence that is unavailable the handler registers a Barrier on that sequence,
-Once the sequence has been written to via the Publisher the barrier is released
-
-Single publisher implementation only!
-"""
-
-
 class PublishEventCallback(Protocol):
     def __call__(self, event: EventFactory, sequence: Sequence) -> None: ...
 
@@ -46,21 +34,18 @@ class PublishEventCallable(Protocol):
     def __call__(self, cb: PublishEventCallback, *, timeout: Optional[int] = None) -> None: ...
 
 class Disruptor:
-    def __init__(self, length: int, factory, *, multiproc=False):
-        if length % 2:
-            raise ValueError("length must be a power of 2")
-        assert callable(factory)
-        self.ring_size = length  # fixed so no need for ctype
-        self._ring = [factory() for x in range(length)]
+    def __init__(self, capacity: int, event_factory: Callable[..., EventFactory], *, multiproc=False):
+        if capacity % 2:
+            raise ValueError("capacity must be a power of 2")
+        assert callable(event_factory)
+
+        self.ring_size = capacity
+        self._ring = [event_factory() for x in range(capacity)]
         # instead of two separate hash tables embed these into the ring
-        self.__read_barriers: Dict[Sequence, threading.Event] = {} # how can I use locks not barriers
-        # this will have an subscriber identifier and the current value they
-        # are up to
+        self.__read_barriers: Dict[Sequence, threading.Event] = {}
+        # this will have an subscriber identifier and the current value they are up to
         self.subscribers: List[Subscriber] = []
-        self.publisher_count = 0 # if > 0 then must use locks on sequence incrementation
-        # need to track the subscribers and see what the lowest read is at
-        # on a subscriber get it writes to this subscriber dict that sequence value
-        # on the next subscriber read it updates this value
+        self.publisher_count = 0 # if > 0 then must use locks on sequence incrementing
         self.manager = mp.Manager() if multiproc else None
         self.mu = self.manager.Lock() if self.manager else threading.Lock()
         self.__next_sequence: Sequence = Sequence(0)
@@ -95,13 +80,12 @@ class Disruptor:
                     return
             raise Exception('subscriber not found')
             
-    # @throttle_timer
     def next(self, timeout: Optional[int]=None):
         if self.is_closed():
             raise DisruptorClosed()
 
         next_value = self.__next_sequence
-        # will remove this if subscribers are embeded in the ring
+        # TODO: remove this when subscribers are embeded in the ring
         for subscriber in self.subscribers:
             seq = subscriber.sequence
             if seq is not None and abs(seq-next_value) % self.ring_size == 0:
@@ -111,7 +95,7 @@ class Disruptor:
         return next_value
 
     def _increment_next(self) -> Sequence:
-        # needs lock if multi producer
+        # TODO: enable lock here if multi producer
         next_value = Sequence(self.__next_sequence + 1)
         self.__next_sequence = next_value
         return next_value
@@ -156,7 +140,7 @@ class Disruptor:
                 barrier = self.manager.Event() if self.manager else threading.Event()
                 barrier = self.__read_barriers.setdefault(sequence, barrier)
 
-        # this should not be called by the main distruptor thread
+        # TODO: this should not be called by the main distruptor thread
         # need a RLock check here to ensure caller is not disruptor
         ok = barrier.wait(timeout)
         if ok:
@@ -179,7 +163,7 @@ class Disruptor:
         return self._closed
 
     def close(self) -> None:
-        # should only be callable from producers
+        # TODO: should only be callable from producers, add lock check here.
         self._closed = True
         for sub in self.subscribers:
             sub.disruptor_closed = True

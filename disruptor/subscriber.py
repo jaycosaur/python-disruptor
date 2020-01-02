@@ -20,7 +20,6 @@ class Subscriber():
         return self.sequence
 
     def update_sequence(self, sequence: Sequence) -> Sequence:
-        # needs to be atomic to stop skipping
         self.sequence = sequence
-        self._release_barrier() # release any producers waiting on previous barrier
+        self._release_barrier()
         return sequence

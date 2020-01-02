@@ -3,6 +3,7 @@ from typing import Optional
 from disruptor.sequence import Sequence
 
 class Publisher():
+    """Not yet fully implemented"""
     def __init__(self, id, barrier: Event):
         self.id = id
         self.sequence: Optional[Sequence] = None
@@ -19,7 +20,6 @@ class Publisher():
         return self.sequence
 
     def update_sequence(self, sequence: Sequence) -> Sequence:
-        # needs to be atomic to stop skipping
         self.sequence = sequence
-        self._release_barrier() # release any producers waiting on previous barrier
+        self._release_barrier()
         return sequence

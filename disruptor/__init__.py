@@ -9,9 +9,6 @@ from .disruptor import (
 from .factory import (
     EventFactory
 )
-from .publisher import (
-    Publisher
-)
 from .sequence import (
     Sequence
 )
