@@ -4,9 +4,10 @@ python:
     - "3.7"
 install:
     - pip3 install -r requirements.txt
+    - pip3 install -r test-requirements.txt
 jobs: 
     include:
     - stage: lint and test
     script: 
-        - run-lint.sh
-        - run-test.sh
+        - ./scripts/run-lint.sh
+        - ./scripts/run-test.sh

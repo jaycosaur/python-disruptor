@@ -6,7 +6,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="disruptor",
-    version="0.0.1",
+    version="0.0.2",
+    install_requires=[
+     'typing-extensions >= 3.7.4.1',
+    ],
     author="Jacob Richter",
     author_email="jaycorichter@gmail.com",
     description="Python implementation of a disruptor: a multi-subscriber, multi-producer, blocking ring buffer.",

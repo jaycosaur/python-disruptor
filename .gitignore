@@ -2,3 +2,6 @@
 .mypy_cache
 .pytest_cache
 __pycache__
+build
+disruptor.egg-info
+dist
