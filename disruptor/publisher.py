@@ -2,9 +2,11 @@ from threading import Event
 from typing import Optional
 from disruptor.sequence import Sequence
 
-class Publisher():
+
+class Publisher:
     """Not yet fully implemented"""
-    def __init__(self, id, barrier: Event):
+
+    def __init__(self, id: str, barrier: Event):
         self.id = id
         self.sequence: Optional[Sequence] = None
         self.barrier = barrier
